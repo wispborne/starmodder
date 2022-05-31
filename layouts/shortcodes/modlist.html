@@ -1,31 +1,41 @@
 {{ $repo := getJSON "https://raw.githubusercontent.com/davidwhitman/StarsectorModRepo/main/ModRepo.json" }}
+<div class="container">
+  <div class="row equal">
+    {{ range $mod := $repo.items}}
+    <div class="col-lg-4 col-md-12 mb-4">
+      <div class="card mb-2" style="height: 100%">
+        <div class="card-body">
+          {{ range $img := $mod.images }}
+          <div style="max-height: 120px; margin-bottom: 16px" class="bg-image hover-overlay ripple"
+            data-mdb-ripple-color="light">
+            <img src="{{ $img.url }}" class="img-fluid" />
+            <a href="#!">
+              <div class="mask" style="background-color: rgba(251, 251, 251, 0.15)"></div>
+            </a>
+          </div>
+          {{ end }}
 
-{{ range $mod := $repo.items}}
-<div class="card mb-2">
-  <div class="card-body">
-    <div class="row">
-      {{ range $img := $mod.images }}
-      <div style="max-height: 120px; margin-bottom: 16px" class="bg-image hover-overlay ripple" data-mdb-ripple-color="light">
-        <img src="{{ $img.url }}" class="img-fluid" />
-        <a href="#!">
-          <div class="mask" style="background-color: rgba(251, 251, 251, 0.15)"></div>
-        </a>
+          <h5 class="card-title">{{ $mod.name }}</h5>
+          <small class="text-muted">{{ delimit $mod.authorsList ", "}}</small>
+
+          <p class="card-text">
+            {{ $mod.summary }}
+          </p>
+
+          {{ range $url_name, $url_value := $mod.urls }}
+          <a href="{{$url_value}}" class="btn btn-primary mb-1">
+            {{ cond (eq $url_name "DirectDownload") "Download"
+            (cond (eq $url_name "DownloadPage") "Website"
+            (cond (eq $url_name "Forum") "Forum"
+            (cond (eq $url_name "Discord") "Discord" $url_name
+            )))
+            }}</a>
+          {{ end }}
+        </div>
       </div>
-      {{ end }}
 
-      <h5 class="card-title">{{ $mod.name }}</h5>
-      <small class="text-muted">{{ delimit $mod.authorsList ", "}}</small>
-
-      <p class="card-text">
-        {{ $mod.summary }}
-      </p>
-
-      {{ range $url_name, $url_value := $mod.urls }}
-      <a href="{{$url_value}}" class="btn btn-primary">{{ $url_name }}</a>
-      {{ end }}
     </div>
-
+    {{/* <div>{{partial "mod" . }}</div> */}}
+    {{ end }}
   </div>
 </div>
-{{/* <div>{{partial "mod" . }}</div> */}}
-{{ end }}
