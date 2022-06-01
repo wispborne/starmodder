@@ -9,7 +9,7 @@
           <div style="max-height: 120px; margin-bottom: 16px" class="bg-image hover-overlay ripple"
             data-mdb-ripple-color="light">
             <img src="{{ $img.url }}" class="img-fluid" />
-            <a href="#!">
+            <a class="gallery" href="{{ $img.url }}" title="{{ $mod.name }}">
               <div class="mask" style="background-color: rgba(251, 251, 251, 0.15)"></div>
             </a>
           </div>
@@ -39,3 +39,7 @@
     {{ end }}
   </div>
 </div>
+
+<script type="text/javascript">
+  var lightbox = new SimpleLightbox('a.gallery', { captionSelector: "self", captionPosition: "top" });
+</script>

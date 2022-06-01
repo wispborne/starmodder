@@ -5,8 +5,9 @@ title = "Starmodder"
 enableEmoji = true
 theme = "ananke"
 
-custom_css = ["css/mdb.dark.min.css"]
-custom_js = ["js/mbd.min.js"]
+[params]
+custom_css = ["/css/mdb.dark.min.css", "css/simple-lightbox.css"]
+custom_js = ["/js/mbd.min.js", "/js/simple-lightbox.min.js"]
 
 # From Ananke Theme
 # DefaultContentLanguage = "en" 
