@@ -50,8 +50,10 @@
           <a href="{{$url_value}}" target="_blank" class="btn btn-dark btn-sm mb-1">
             <i class="fab fa-discord"></i>
           </a>
+          {{ else if (eq $url_name "NexusMods") }}
+          <a href="{{$url_value}}" target="_blank" class="btn btn-dark btn-sm mb-1">Nexus</a>
           {{ else }}
-          <a href="{{$url_value}}" target="_blank" class="btn btn-dark btn-sm mb-1">$url_name</a>
+          <a href="{{$url_value}}" target="_blank" class="btn btn-dark btn-sm mb-1">{{$url_name}}</a>
           {{ end }}
           {{ end }}
           <!-- Modal -->
