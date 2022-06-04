@@ -1,0 +1,7 @@
+{{ range .Param "custom_js_footer" -}}
+<script type="text/javascript" src="{{ . | urlize | relURL }}"></script>
+{{- end }}
+
+<script type="text/javascript">
+  var lightbox = new SimpleLightbox('a.gallery', { captionSelector: "self", captionPosition: "top" });
+</script>

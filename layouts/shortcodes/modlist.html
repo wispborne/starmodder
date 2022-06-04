@@ -4,7 +4,7 @@
     {{ range $index, $mod := $repo.items}}
     <div class="col-lg-4 col-md-12 mb-4">
       <div class="card mb-2" style="height: 100%">
-        <div class="card-body">
+        <div class="card-header">
           {{ range $img := $mod.images }}
           <div style="max-height: 120px; margin-bottom: 16px" class="bg-image hover-overlay ripple"
             data-mdb-ripple-color="light">
@@ -15,40 +15,65 @@
           </div>
           {{ end }}
 
-          <h5 class="card-title">{{ $mod.name }}</h5>
-          <small class="text-muted">{{ delimit $mod.authorsList ", "}}</small>
+          <h4 class="card-title">{{ $mod.name }}</h4>
 
-          <p class="card-text">
+          <small class="text-muted"><i class="fas fa-user-alt me-2 mb-2"></i>{{ delimit $mod.authorsList ", "}}</small>
+          <br />
+          {{ range $category := $mod.categories }}
+          <small class="text-muted"><i class="fas fa-tag me-2 mb-2"></i>{{$category}}</small>
+          {{ end }}
+          {{ if $mod.categories}} <br /> {{ end }}
+        </div>
+        <div class="card-body">
+          <p class="card-text small" style="opacity: 0.85">
             {{ $mod.summary }}
           </p>
+          {{ if ($mod.summary)}}
+          <div class="text-center">
+            <button type="button" class="btn btn-outline-info" data-mdb-toggle="modal"
+              data-mdb-target="#modal{{ $index }}">Read More</button>
+          </div>
+          {{ end }}
+        </div>
+        <div class="card-footer">
 
           {{ range $url_name, $url_value := $mod.urls }}
-          <a href="{{$url_value}}" class="btn btn-primary mb-1">
-            {{ cond (eq $url_name "DirectDownload") "Download"
-            (cond (eq $url_name "DownloadPage") "Website"
-            (cond (eq $url_name "Forum") "Forum"
-            (cond (eq $url_name "Discord") "Discord" $url_name
-            )))
-            }}</a>
+
+          {{ if (eq $url_name "DirectDownload") }}
+          <a href="{{$url_value}}" target="_blank" class="btn btn-dark btn-floating" style="margin-right: 8px;">
+            <i class="fas fa-download"></i></a>
+          {{ else if (eq $url_name "DownloadPage") }}
+          <a href="{{$url_value}}" target="_blank" class="btn btn-dark btn-sm mb-1">Website</a>
+          {{ else if (eq $url_name "Forum") }}
+          <a href="{{$url_value}}" target="_blank" class="btn btn-dark btn-sm mb-1">Forum</a>
+          {{ else if (eq $url_name "Discord") }}
+          <a href="{{$url_value}}" target="_blank" class="btn btn-dark btn-sm mb-1">
+            <i class="fab fa-discord"></i>
+          </a>
+          {{ else }}
+          <a href="{{$url_value}}" target="_blank" class="btn btn-dark btn-sm mb-1">$url_name</a>
           {{ end }}
-
-          {{/*  <button type="button" class="btn btn-primary" data-mdb-toggle="modal"
-            data-mdb-target="#modal{{ $index }}">More</button>  */}}
-
+          {{ end }}
           <!-- Modal -->
-          <div class="modal fade" id="modal{{ $index }}" tabindex="-1" aria-labelledby="exampleModalLabel"
+          <div class="modal" id="modal{{ $index }}" tabindex="-1" aria-labelledby="exampleModalLabel"
             aria-hidden="true">
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
               <div class="modal-content">
                 <div class="modal-header">
-                  <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                  <h5 class="modal-title" id="exampleModalLabel">{{ $mod.name }}</h5>
+
                   <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">...</div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-mdb-dismiss="modal">Close</button>
-                  <button type="button" class="btn btn-primary">Save changes</button>
-                </div>
+                <div id="modmodal-{{ $index }}" class="modal-body">{{ $mod.description }}</div>
+                <script>
+                  $(function () {
+                    $("#modmodal-{{ $index }}").html(
+                      DOMPurify.sanitize(
+                        marked.parse($("#modmodal-{{ $index }}").html())
+                      )
+                    );
+                  });
+                </script>
               </div>
             </div>
           </div>
@@ -60,7 +85,3 @@
     {{ end }}
   </div>
 </div>
-
-<script type="text/javascript">
-  var lightbox = new SimpleLightbox('a.gallery', { captionSelector: "self", captionPosition: "top" });
-</script>
