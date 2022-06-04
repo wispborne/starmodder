@@ -6,8 +6,8 @@ enableEmoji = true
 theme = "ananke"
 
 [params]
-custom_css = ["/css/mdb.dark.min.css", "css/simple-lightbox.css"]
-custom_js = ["/js/mbd.min.js", "/js/simple-lightbox.min.js"]
+custom_css = ["css/mdb.dark.min.css", "css/simple-lightbox.css"]
+custom_js = ["js/mbd.min.js", "js/simple-lightbox.min.js"]
 
 # From Ananke Theme
 # DefaultContentLanguage = "en" 
