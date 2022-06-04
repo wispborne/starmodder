@@ -2,9 +2,12 @@
 
 <div class="container">
   <div class="text-center">
-    <small class="text-muted float-end">generated
-      {{ time.Format "Jan 2" $repo.lastUpdated }}
-      {{ time.Format ":time_short" $repo.lastUpdated }}</small>
+    <small class="text-muted float-end">generated <span class="date">{{$repo.lastUpdated}}</span></small>
+    <script>
+        $(".date").text(
+          new Date($(".date").text()).toLocaleString()
+        );
+      </script>
     <br />
     <h3><strong>Starmodder</strong></h3>
     <h6>An unofficial Starsector <a href="https://github.com/davidwhitman/StarsectorModRepo" target="_blank">mod
@@ -42,8 +45,8 @@
                 {{/* Last updated */}}
                 {{ if $mod.dateTimeCreated }}
                 <div class="col-sm-6">
-                  <small class="text-muted"><i class="fas fa-clock me-2 mb-2"></i>{{ time.Format ":date_medium"
-                    $mod.dateTimeCreated }}</small>
+                  <small class="text-muted"><i class="fas fa-clock me-2 mb-2"></i>
+                    {{ time.Format ":date_medium" $mod.dateTimeCreated }}</small>
                 </div>
                 {{ end}}
                 {{/* Game version */}}
