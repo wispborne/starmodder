@@ -10,7 +10,8 @@ custom_css = ["css/mdb.dark.min.css", "css/simple-lightbox.css"]
 custom_js_header = [
   "/js/marked.min.js",
   "/js/purify.min.js",
-  "/js/jquery-3.6.0.slim.min.js"
+  "/js/jquery-3.6.0.slim.min.js",
+  "js/list.min.js",
 ]
 custom_js_footer = [
   "/js/mdb.min.js",

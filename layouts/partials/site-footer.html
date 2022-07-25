@@ -5,3 +5,17 @@
 <script type="text/javascript">
   var lightbox = new SimpleLightbox('a.gallery', { captionSelector: "self", captionPosition: "top" });
 </script>
+
+<script type="text/javascript">
+  var options = {
+    valueNames: [
+      'mod-name',
+      'mod-authors',
+      'mod-game-version',
+      'mod-categories',
+      'mod-sources',
+      { data: ['id'] }],
+  }
+
+  var modList = new List('mod-list', options);
+</script>
