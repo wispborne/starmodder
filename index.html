@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Starmodder 3</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Top App Bar -->
+  <header class="top-bar">
+    <div class="top-bar-row">
+      <div class="top-bar-title">
+        <h1>Starmodder 3.0</h1>
+        <span class="subtitle">An unofficial Starsector mod database</span>
+      </div>
+      <div class="top-bar-actions">
+        <span id="lastUpdated" class="last-updated"></span>
+        <button class="icon-btn" id="aboutBtn" title="About">
+          <span class="material-icons">info</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-field">
+          <span class="material-icons search-icon">search</span>
+          <input type="text" id="searchInput" placeholder="Search mods..." autocomplete="off">
+          <button class="icon-btn search-clear hidden" id="searchClear" title="Clear search">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <select id="categoryFilter" class="filter-select">
+          <option value="">All Categories</option>
+        </select>
+
+        <select id="versionFilter" class="filter-select">
+          <option value="">All Versions</option>
+        </select>
+
+        <select id="sortSelect" class="filter-select">
+          <option value="name-asc" selected>Name A–Z</option>
+          <option value="name-desc">Name Z–A</option>
+          <option value="date-desc">Newest</option>
+          <option value="date-asc">Oldest</option>
+          <option value="version-desc">Game Version</option>
+        </select>
+      </div>
+
+      <div class="toolbar-right">
+        <span id="resultCount" class="result-count"></span>
+
+        <div class="size-control">
+          <span class="material-icons size-icon">photo_size_select_small</span>
+          <input type="range" id="sizeSlider" min="200" max="500" value="300" step="25">
+          <span class="material-icons size-icon">photo_size_select_large</span>
+        </div>
+
+        <div class="view-toggle">
+          <button class="icon-btn active" id="gridViewBtn" title="Grid view">
+            <span class="material-icons">grid_view</span>
+          </button>
+          <button class="icon-btn" id="listViewBtn" title="List view">
+            <span class="material-icons">view_list</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Loading State -->
+  <div id="loadingState" class="state-container">
+    <div class="loader"></div>
+    <p>Loading mod repository...</p>
+  </div>
+
+  <!-- Error State -->
+  <div id="errorState" class="state-container hidden">
+    <span class="material-icons error-icon">error_outline</span>
+    <p id="errorMessage">Failed to load mod data.</p>
+    <button class="btn-filled" id="retryBtn">Retry</button>
+  </div>
+
+  <!-- Main Content -->
+  <main id="modContainer" class="mod-grid hidden"></main>
+
+  <!-- Detail Modal -->
+  <div id="detailModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <button class="icon-btn modal-close" id="modalClose">
+        <span class="material-icons">close</span>
+      </button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Image Lightbox -->
+  <div id="lightbox" class="lightbox-overlay hidden">
+    <img id="lightboxImg" src="" alt="">
+  </div>
+
+  <!-- About Dialog -->
+  <div id="aboutModal" class="modal-overlay hidden">
+    <div class="modal-content about-dialog">
+      <button class="icon-btn modal-close" id="aboutClose">
+        <span class="material-icons">close</span>
+      </button>
+      <div class="about-body">
+        <h2>Starmodder 3</h2>
+        <p class="about-subtitle">An unofficial Starsector mod database</p>
+        <p class="about-credit">by Wisp</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
