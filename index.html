@@ -15,7 +15,7 @@
   <header class="top-bar">
     <div class="top-bar-row">
       <div class="top-bar-title">
-        <h1>Starmodder 3.0</h1>
+        <h1>Starmodder <span id="appVersionHeader"></span></h1>
         <span class="subtitle">An unofficial Starsector mod database</span>
       </div>
       <div class="top-bar-actions">
@@ -35,6 +35,12 @@
           <button class="icon-btn search-clear hidden" id="searchClear" title="Clear search">
             <span class="material-icons">close</span>
           </button>
+          <div class="search-tooltip" id="searchTooltip">
+            <p>Searches mod names, authors, and categories.</p>
+            <p><strong>Comma-separated</strong> &mdash; <code>vayra, nexerelin</code> matches either term</p>
+            <p><strong>Exclude</strong> &mdash; prefix with <code>-</code> to hide results, e.g. <code>-utility</code></p>
+            <p><strong>Acronyms</strong> &mdash; e.g. <code>RAT</code> or <code>VIC</code></p>
+          </div>
         </div>
 
         <select id="categoryFilter" class="filter-select">
@@ -113,13 +119,49 @@
         <span class="material-icons">close</span>
       </button>
       <div class="about-body">
-        <h2>Starmodder 3</h2>
+        <h2>Starmodder <span id="appVersionAbout"></span></h2>
         <p class="about-subtitle">An unofficial Starsector mod database</p>
         <p class="about-credit">by Wisp</p>
+
+        <div class="about-links">
+          <a href="https://github.com/wispborne/Starmodder" target="_blank" rel="noopener" class="about-link">
+            <span class="material-icons">code</span> Source Code
+          </a>
+        </div>
+
+        <div class="about-section">
+          <h3>Starsector</h3>
+          <p><a href="https://fractalsoftworks.com" target="_blank" rel="noopener">Fractal Softworks</a> &mdash; official site</p>
+          <p><a href="https://fractalsoftworks.com/forum/index.php?topic=11488.0" target="_blank" rel="noopener">Unofficial Starsector Discord</a></p>
+        </div>
+
+        <div class="about-section">
+          <h3>Data Source</h3>
+          <p>Mod data from the <a href="https://github.com/wispborne/StarsectorModRepo" target="_blank" rel="noopener">Starsector Mod Repo</a>, maintained by Wisp.</p>
+          <p>Data is updated twice a day at 11am and 11pm (America/New_York).</p>
+        </div>
+
+        <div class="about-section about-stats">
+          <div class="about-stat">
+            <h3>Mods Indexed</h3>
+            <p id="aboutModCount">&mdash;</p>
+          </div>
+          <div class="about-stat">
+            <h3>Data Last Updated</h3>
+            <p id="aboutLastUpdated">&mdash;</p>
+          </div>
+        </div>
+
+        <div class="about-section">
+          <h3>Credits</h3>
+          <p><a href="https://fonts.google.com/specimen/Roboto" target="_blank" rel="noopener">Roboto</a> typeface by Google, under <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener">Apache 2.0</a></p>
+          <p><a href="https://fonts.google.com/icons" target="_blank" rel="noopener">Material Icons</a> by Google, under <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener">Apache 2.0</a></p>
+        </div>
       </div>
     </div>
   </div>
 
+  <script src="constants.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

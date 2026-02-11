@@ -1,60 +1,3 @@
-// ===== Constants =====
-const DATA_URL =
-  'https://raw.githubusercontent.com/wispborne/StarsectorModRepo/refs/heads/main/ModRepo.json';
-
-const LINK_ICONS = {
-  Forum: 'forum',
-  Discord: 'chat',
-  DirectDownload: 'download',
-  DownloadPage: 'open_in_new',
-  NexusMods: 'storefront',
-};
-
-const LINK_LABELS = {
-  Forum: 'Forum',
-  Discord: 'Discord',
-  DirectDownload: 'Download',
-  DownloadPage: 'Download Page',
-  NexusMods: 'NexusMods',
-};
-
-// ===== Author Aliases =====
-const MOD_AUTHOR_ALIASES = [
-  ["RustyCabbage", "rubi", "ceruleanpancake"],
-  ["Wisp", "Wispborne", "Tartiflette and Wispborne"],
-  ["DesperatePeter", "Jannes"],
-  ["shoi", "gettag"],
-  ["Dark.Revenant", "DR"],
-  ["LazyWizard", "Lazy"],
-  ["Techpriest", "Timid"],
-  ["Nick XR", "Nick", "nick7884"],
-  ["PMMeCuteBugPhotos", "MrFluffster"],
-  ["Dazs", "Spiritfox", "spiritfox_"],
-  ["Histidine, Zaphide", "Histidine", "histidine_my"],
-  ["Snrasha", "Snrasha, the tinkerer"],
-  ["Hotpics", "jackwolfskin"],
-  ["cptdash", "SpeedRacer"],
-  ["Elseud", "Elseudo"],
-  ["TobiaF", "Toby"],
-  ["Mephyr", "Liral"],
-  ["Tranquility", "tranquil_light"],
-  ["FasterThanSleepyfish", "Sleepyfish"],
-  ["Nerzhull_AI", "nerzhulai"],
-  ["theDrag", "theDragn", "iryx"],
-  ["Audax", "Audaxl"],
-  ["Pogre", "noof"],
-  ["lord_dalton", "Epta Consortium"],
-  ["hakureireimu", "LngA7Gw"],
-  ["Nes", "nescom"],
-  ["float", "this_is_a_username"],
-  ["AERO", "aero.assault"],
-  ["Fellout", "felloutwastaken"],
-  ["Mr. THG", "thog"],
-  ["Derelict_Surveyor", "jdt15"],
-  ["constat.", "Astarat", "Astarat and PureTilt"],
-  ["Soren", "S\u00f8ren", "Harmful Mechanic"],
-];
-
 // ===== Version Comparison (ported from Dart) =====
 
 const _groupingRegex = /(\d+|[a-zA-Z]+|[-\.]+)/g;
@@ -185,11 +128,6 @@ function compareVersions(a, b) {
 
 // ===== Version Normalization =====
 
-// Hardcoded version equivalences (game dev quirks)
-const VERSION_ALIASES = {
-  '0.9.5': '0.95',
-};
-
 function normalizeBaseVersion(rawVersion) {
   if (!rawVersion) return '';
   // Strip all non-version characters (keep digits, dots, hyphens)
@@ -206,6 +144,94 @@ function normalizeBaseVersion(rawVersion) {
 
 // Map from normalized base version to Set of raw version strings
 let normalizedVersionMap = new Map();
+
+// ===== Category Normalization =====
+
+const _noiseWords = new Set(['mods', 'mod', 'pack', 'packs']);
+
+function categoryKey(raw) {
+  if (!raw) return '';
+  let s = raw;
+  // Strip leading bracketed text like [0.98a]
+  s = s.replace(/^\[[^\]]*\]\s*/, '');
+  // Lowercase
+  s = s.toLowerCase();
+  // Replace separators (/ . -) with spaces
+  s = s.replace(/[\/.\-]/g, ' ');
+  // Collapse whitespace and trim
+  s = s.replace(/\s+/g, ' ').trim();
+  // Split into words and strip trailing noise words
+  const words = s.split(' ');
+  while (words.length > 1 && _noiseWords.has(words[words.length - 1])) {
+    words.pop();
+  }
+  // Depluralize the last word (simple heuristic)
+  if (words.length > 0) {
+    let last = words[words.length - 1];
+    if (last.endsWith('ies') && last.length > 4) {
+      last = last.slice(0, -3) + 'y';
+    } else if (last.endsWith('s') && !last.endsWith('ss') && last.length >= 4) {
+      last = last.slice(0, -1);
+    }
+    words[words.length - 1] = last;
+  }
+  return words.join(' ');
+}
+
+function normalizeCategories(items) {
+  // 1. Count frequency of each raw category
+  const freq = new Map();
+  for (const item of items) {
+    for (const cat of item.categories || []) {
+      freq.set(cat, (freq.get(cat) || 0) + 1);
+    }
+  }
+
+  // 2. Group raw categories by their normalized key
+  const groups = new Map(); // key → [rawCategory, ...]
+  for (const raw of freq.keys()) {
+    const key = categoryKey(raw);
+    if (!key) continue;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(raw);
+  }
+
+  // 3. For each group, pick the best label
+  const remap = new Map(); // rawCategory → bestLabel
+  for (const [, members] of groups) {
+    if (members.length <= 1) continue; // nothing to merge
+    // Sort: most frequent first, then shorter, then has uppercase first letter
+    members.sort((a, b) => {
+      const fa = freq.get(a) || 0;
+      const fb = freq.get(b) || 0;
+      if (fb !== fa) return fb - fa;
+      if (a.length !== b.length) return a.length - b.length;
+      const aUp = /^[A-Z]/.test(a) ? 0 : 1;
+      const bUp = /^[A-Z]/.test(b) ? 0 : 1;
+      return aUp - bUp;
+    });
+    const best = members[0];
+    for (const raw of members) {
+      if (raw !== best) remap.set(raw, best);
+    }
+  }
+
+  // 4. Apply remapping in place, deduplicating per item
+  if (remap.size === 0) return;
+  for (const item of items) {
+    if (!item.categories) continue;
+    const seen = new Set();
+    const result = [];
+    for (const cat of item.categories) {
+      const label = remap.get(cat) || cat;
+      if (!seen.has(label)) {
+        seen.add(label);
+        result.push(label);
+      }
+    }
+    item.categories = result;
+  }
+}
 
 // ===== Advanced Search =====
 
@@ -243,7 +269,7 @@ function buildSearchTags(item) {
   // Name
   addTag(item.name, 0);
 
-  // Slugified name + parts + acronym
+  // Slugified name + parts + acronyms
   if (item.name) {
     const slug = slugify(item.name);
     addTag(slug, 10);
@@ -254,6 +280,13 @@ function buildSearchTags(item) {
     if (parts.length > 0) {
       const acronym = parts.map((p) => p[0]).join('');
       addTag(acronym, 0);
+      // Also generate acronym skipping common stop words
+      const STOP_WORDS = new Set(['of', 'the', 'and', 'for', 'a', 'an', 'in', 'on', 'to', 'by', 'or', 'at']);
+      const filtered = parts.filter((p) => !STOP_WORDS.has(p));
+      if (filtered.length > 0 && filtered.length !== parts.length) {
+        const shortAcronym = filtered.map((p) => p[0]).join('');
+        addTag(shortAcronym, 0);
+      }
     }
   }
 
@@ -267,12 +300,12 @@ function buildSearchTags(item) {
 
   // Categories
   for (const cat of item.categories || []) {
-    addTag(cat, 0);
+    addTag(cat, 20);
   }
 
   // Versions
-  addTag(item.gameVersionReq, 0);
-  addTag(item.modVersion, 0);
+  addTag(item.gameVersionReq, 20);
+  addTag(item.modVersion, 20);
 
   // Deduplicate
   const seen = new Set();
@@ -289,6 +322,14 @@ function buildSearchTags(item) {
   return unique;
 }
 
+function scoreTag(tag, query) {
+  const t = tag.term;
+  if (t === query) return 100 - tag.penalty;           // exact match
+  if (t.startsWith(query)) return 75 - tag.penalty;    // starts-with
+  if (t.includes(query)) return 50 - tag.penalty;      // contains
+  return -1;                                            // no match
+}
+
 function searchMods(items, query) {
   if (!query || query.trim().length === 0) return items;
 
@@ -299,7 +340,7 @@ function searchMods(items, query) {
 
   if (queryParts.length === 0) return items;
 
-  const positiveResults = new Set();
+  const scoreMap = new Map();
   const negativeResults = new Set();
   let hasPositive = false;
   let hasNegative = false;
@@ -313,29 +354,49 @@ function searchMods(items, query) {
 
     for (const item of items) {
       const tags = buildSearchTags(item);
-      const matches = tags.some((tag) => tag.term.includes(actualQuery));
-      if (matches) {
+      let bestScore = -1;
+      for (const tag of tags) {
+        const s = scoreTag(tag, actualQuery);
+        if (s > bestScore) bestScore = s;
+      }
+      if (bestScore >= 0) {
         if (isNegative) {
           negativeResults.add(item);
         } else {
-          positiveResults.add(item);
+          const prev = scoreMap.get(item) || 0;
+          scoreMap.set(item, Math.max(prev, bestScore));
         }
       }
     }
   }
 
   let result;
-  if (hasPositive && positiveResults.size > 0) {
-    result = items.filter((item) => positiveResults.has(item) && !negativeResults.has(item));
+  if (hasPositive && scoreMap.size > 0) {
+    result = items.filter((item) => scoreMap.has(item) && !negativeResults.has(item));
   } else if (!hasPositive && hasNegative) {
     result = items.filter((item) => !negativeResults.has(item));
-  } else if (hasPositive && positiveResults.size === 0) {
+  } else if (hasPositive && scoreMap.size === 0) {
     result = [];
   } else {
     result = items;
   }
 
+  // Attach scores for relevance sorting
+  for (const item of result) {
+    item._searchScore = scoreMap.get(item) || 0;
+  }
+
   return result;
+}
+
+// ===== Highest Game Version =====
+let highestGameVersion = '';
+
+function isOutdatedVersion(rawVersion) {
+  if (!rawVersion || !highestGameVersion) return false;
+  const base = normalizeBaseVersion(rawVersion);
+  if (!base) return false;
+  return compareVersions(base, highestGameVersion) < 0;
 }
 
 // ===== State =====
@@ -343,12 +404,12 @@ let state = {
   allItems: [],
   filteredItems: [],
   lastUpdated: null,
-  view: localStorage.getItem('sm3-view') || 'grid',
-  cardSize: parseInt(localStorage.getItem('sm3-cardSize') || '300', 10),
+  view: localStorage.getItem(LS_VIEW) || DEFAULT_VIEW,
+  cardSize: parseInt(localStorage.getItem(LS_CARD_SIZE) || DEFAULT_CARD_SIZE, 10),
   search: '',
   category: '',
   version: '',
-  sort: localStorage.getItem('sm3-sort') || 'name-asc',
+  sort: localStorage.getItem(LS_SORT) || DEFAULT_SORT,
 };
 
 // ===== DOM References =====
@@ -377,6 +438,10 @@ const retryBtn = $('retryBtn');
 
 // ===== Init =====
 async function init() {
+  // Set version in UI
+  $('appVersionHeader').textContent = APP_VERSION;
+  $('appVersionAbout').textContent = APP_VERSION;
+
   // Restore persisted state
   sortSelect.value = state.sort;
   sizeSlider.value = state.cardSize;
@@ -408,6 +473,9 @@ async function fetchMods() {
       const d = new Date(state.lastUpdated);
       lastUpdatedEl.textContent = 'Data updated ' + d.toLocaleString();
     }
+
+    // Normalize categories to merge duplicates (e.g. Library/Libraries)
+    normalizeCategories(state.allItems);
 
     // Pre-build search tags cache
     for (const item of state.allItems) {
@@ -463,8 +531,12 @@ function populateFilters() {
 
   // Versions — sorted newest first, exclude versions with fewer than 3 mods
   const sortedVers = [...normalizedVersionMap.keys()]
-    .filter((v) => (versionModCount.get(v) || 0) >= 3)
+    .filter((v) => (versionModCount.get(v) || 0) >= MIN_VERSION_MOD_COUNT)
     .sort((a, b) => compareVersions(b, a));
+
+  // Highest game version is the first in the sorted (dropdown-eligible) list
+  highestGameVersion = sortedVers.length > 0 ? sortedVers[0] : '';
+
   for (const ver of sortedVers) {
     const opt = document.createElement('option');
     opt.value = ver;
@@ -507,9 +579,13 @@ function applyFilters() {
   }
 
   // Sort
-  const [sortKey, sortDir] = state.sort.split('-');
+  const activeSort = state.sort;
+  const [sortKey, sortDir] = activeSort.split('-');
   items.sort((a, b) => {
-    if (sortKey === 'name') {
+    if (sortKey === 'relevance') {
+      const cmp = (b._searchScore || 0) - (a._searchScore || 0);
+      return cmp !== 0 ? cmp : nameCompare(a, b);
+    } else if (sortKey === 'name') {
       const cmp = nameCompare(a, b);
       return sortDir === 'asc' ? cmp : -cmp;
     } else if (sortKey === 'date') {
@@ -578,13 +654,15 @@ function renderGrid() {
     // Strip HTML tags from summary for display
     const summary = stripHtml(item.summary || '');
 
+    const outdated = isOutdatedVersion(item.gameVersionReq);
+
     card.innerHTML = `
       ${imgHtml}
       <div class="card-body">
         <div class="card-name">${esc(item.name || 'Untitled')}</div>
         <div class="card-author">${esc(authors)}</div>
         <div class="card-meta">
-          ${version ? `<span class="card-meta-item"><span class="material-icons">sports_esports</span>${esc(version)}</span>` : ''}
+          ${version ? `<span class="card-meta-item${outdated ? ' outdated-version' : ''}"${outdated ? ` title="Latest game version is ${highestGameVersion}"` : ''}><span class="material-icons">sports_esports</span>${esc(version)}</span>` : ''}
           ${date ? `<span class="card-meta-item"><span class="material-icons">calendar_today</span>${esc(date)}</span>` : ''}
         </div>
         ${catsHtml ? `<div class="card-categories">${catsHtml}</div>` : ''}
@@ -625,6 +703,7 @@ function renderList() {
 
     const linksHtml = buildLinkButtons(item.urls);
     const dlBtnHtml = buildRowDownloadBtn(item.urls);
+    const rowOutdated = isOutdatedVersion(item.gameVersionReq);
 
     row.innerHTML = `
       ${imgHtml}
@@ -632,7 +711,7 @@ function renderList() {
         <div class="row-name">${esc(item.name || 'Untitled')}</div>
         <div class="row-author">${esc(authors)}</div>
       </div>
-      <div class="row-version">${esc(version)}</div>
+      <div class="row-version${rowOutdated ? ' outdated-version' : ''}"${rowOutdated ? ` title="Latest game version is ${highestGameVersion}"` : ''}>${esc(version)}</div>
       <div class="row-date">${esc(date)}</div>
       <div class="row-categories">${catsHtml}</div>
       <div class="row-links">${dlBtnHtml}${linksHtml}</div>
@@ -670,10 +749,11 @@ function openDetail(item) {
   // Process description: handle <br />, basic markdown links, and Discord formatting
   const description = processDescription(item.description || item.summary || '');
 
+  const detailOutdated = isOutdatedVersion(item.gameVersionReq);
   const metaParts = [];
   if (version)
     metaParts.push(
-      `<span class="detail-meta-item"><span class="material-icons">sports_esports</span>Game: ${esc(version)}</span>`
+      `<span class="detail-meta-item${detailOutdated ? ' outdated-version' : ''}"${detailOutdated ? ` title="Latest game version is ${highestGameVersion}"` : ''}><span class="material-icons">sports_esports</span>Game: ${esc(version)}</span>`
     );
   if (modVer)
     metaParts.push(
@@ -941,19 +1021,56 @@ function updateViewToggle() {
 function bindEvents() {
   // Search (debounced)
   let searchTimeout;
+  let _sortBeforeSearch = null;
+  let _userOverrodeRelevance = false;
+
+  function showRelevanceSort() {
+    let opt = sortSelect.querySelector('option[value="relevance-desc"]');
+    if (!opt) {
+      opt = document.createElement('option');
+      opt.value = 'relevance-desc';
+      opt.textContent = 'Relevance';
+      sortSelect.prepend(opt);
+    }
+    if (!_userOverrodeRelevance) {
+      if (_sortBeforeSearch === null) {
+        _sortBeforeSearch = state.sort;
+      }
+      sortSelect.value = 'relevance-desc';
+      state.sort = 'relevance-desc';
+    }
+  }
+
+  function hideRelevanceSort() {
+    const opt = sortSelect.querySelector('option[value="relevance-desc"]');
+    if (opt) opt.remove();
+    if (_sortBeforeSearch !== null) {
+      state.sort = _sortBeforeSearch;
+      sortSelect.value = _sortBeforeSearch;
+      _sortBeforeSearch = null;
+    }
+    _userOverrodeRelevance = false;
+  }
+
   searchInput.addEventListener('input', () => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
       state.search = searchInput.value;
       searchClear.classList.toggle('hidden', !state.search);
+      if (state.search) {
+        showRelevanceSort();
+      } else {
+        hideRelevanceSort();
+      }
       applyFilters();
-    }, 300);
+    }, SEARCH_DEBOUNCE_MS);
   });
 
   searchClear.addEventListener('click', () => {
     searchInput.value = '';
     state.search = '';
     searchClear.classList.add('hidden');
+    hideRelevanceSort();
     applyFilters();
   });
 
@@ -971,7 +1088,14 @@ function bindEvents() {
   // Sort
   sortSelect.addEventListener('change', () => {
     state.sort = sortSelect.value;
-    localStorage.setItem('sm3-sort', state.sort);
+    if (state.search && state.sort !== 'relevance-desc') {
+      // User manually chose a sort during search — respect it
+      _userOverrodeRelevance = true;
+      _sortBeforeSearch = state.sort;
+    }
+    if (state.sort !== 'relevance-desc') {
+      localStorage.setItem(LS_SORT, state.sort);
+    }
     applyFilters();
   });
 
@@ -979,20 +1103,20 @@ function bindEvents() {
   sizeSlider.addEventListener('input', () => {
     state.cardSize = parseInt(sizeSlider.value, 10);
     document.documentElement.style.setProperty('--card-size', state.cardSize + 'px');
-    localStorage.setItem('sm3-cardSize', state.cardSize);
+    localStorage.setItem(LS_CARD_SIZE, state.cardSize);
   });
 
   // View toggle
   gridViewBtn.addEventListener('click', () => {
     state.view = 'grid';
-    localStorage.setItem('sm3-view', 'grid');
+    localStorage.setItem(LS_VIEW, 'grid');
     updateViewToggle();
     render();
   });
 
   listViewBtn.addEventListener('click', () => {
     state.view = 'list';
-    localStorage.setItem('sm3-view', 'list');
+    localStorage.setItem(LS_VIEW, 'list');
     updateViewToggle();
     render();
   });
@@ -1005,6 +1129,17 @@ function bindEvents() {
 
   // About
   aboutBtn.addEventListener('click', () => {
+    const count = state.allItems.length;
+    $('aboutModCount').textContent = count ? count.toLocaleString() : '—';
+    if (state.lastUpdated) {
+      const d = new Date(state.lastUpdated);
+      $('aboutLastUpdated').textContent = d.toLocaleDateString(undefined, {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: 'numeric', minute: '2-digit',
+      });
+    } else {
+      $('aboutLastUpdated').textContent = '—';
+    }
     aboutModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
   });
