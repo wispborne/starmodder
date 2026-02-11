@@ -450,7 +450,7 @@ body {
 /* Outdated version indicator */
 .outdated-version {
   color: var(--md-sys-color-error);
-  opacity: 0.65;
+  opacity: 0.60;
 }
 
 .card-categories {
@@ -486,6 +486,7 @@ body {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 8px;
+  align-items: center;
 }
 
 .link-btn {
@@ -511,25 +512,33 @@ body {
   border-color: var(--md-sys-color-primary);
 }
 
-/* Download FAB — bottom-right of card */
+/* Download button — absolute bottom-right of card */
 .card-fab {
   position: absolute;
   bottom: 12px;
   right: 12px;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   background: var(--md-sys-color-primary);
   color: var(--md-sys-color-on-primary);
   border: none;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   text-decoration: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
   z-index: 2;
+}
+
+/* Invisible spacer to reserve FAB space on last row of links */
+.card-fab-spacer {
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 .card-fab:hover {
   background: rgb(93, 255, 255);
@@ -537,7 +546,7 @@ body {
   transform: scale(1.05);
 }
 .card-fab .material-icons {
-  font-size: 20px;
+  font-size: 16px;
 }
 
 /* Row download button */

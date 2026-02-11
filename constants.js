@@ -18,7 +18,7 @@ const LINK_LABELS = {
   Forum: 'Forum',
   Discord: 'Discord',
   DirectDownload: 'Download',
-  DownloadPage: 'Download Page',
+  DownloadPage: 'Website',
   NexusMods: 'NexusMods',
 };
 

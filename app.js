@@ -667,7 +667,7 @@ function renderGrid() {
         </div>
         ${catsHtml ? `<div class="card-categories">${catsHtml}</div>` : ''}
         <div class="card-summary">${esc(summary)}</div>
-        ${linksHtml ? `<div class="card-links">${linksHtml}</div>` : ''}
+        <div class="card-links">${linksHtml}${fabHtml ? '<div class="card-fab-spacer"></div>' : ''}</div>
       </div>
       ${fabHtml}
     `;
