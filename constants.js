@@ -68,6 +68,7 @@ const VERSION_ALIASES = {
 const LS_VIEW = 'sm3-view';
 const LS_CARD_SIZE = 'sm3-cardSize';
 const LS_SORT = 'sm3-sort';
+const LS_CUSTOM_DATA = 'sm3-customData';
 
 // ===== Defaults =====
 const DEFAULT_VIEW = 'grid';

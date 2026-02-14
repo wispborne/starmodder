@@ -157,6 +157,22 @@
           <p><a href="https://fonts.google.com/specimen/Roboto" target="_blank" rel="noopener">Roboto</a> typeface by Google, under <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener">Apache 2.0</a></p>
           <p><a href="https://fonts.google.com/icons" target="_blank" rel="noopener">Material Icons</a> by Google, under <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener">Apache 2.0</a></p>
         </div>
+
+        <div id="customDataSection" class="about-section custom-data-section hidden">
+          <h3>Custom Data</h3>
+          <p class="custom-data-hint">Load a local JSON file to replace the mod index.</p>
+          <div id="customDataActive" class="custom-data-active hidden">
+            <span class="material-icons">check_circle</span>
+            <span>Custom data loaded</span>
+            <button class="custom-data-clear" id="customDataClear" title="Remove custom data">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+          <label class="btn-outlined" id="customDataLabel">
+            <span class="material-icons">upload_file</span> Load JSON
+            <input type="file" id="customDataInput" accept=".json,application/json" class="hidden">
+          </label>
+        </div>
       </div>
     </div>
   </div>

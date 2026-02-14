@@ -455,6 +455,33 @@ async function init() {
   await fetchMods();
 }
 
+// ===== Custom Data =====
+function hasCustomData() {
+  return localStorage.getItem(LS_CUSTOM_DATA) !== null;
+}
+
+function loadCustomData() {
+  const raw = localStorage.getItem(LS_CUSTOM_DATA);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    localStorage.removeItem(LS_CUSTOM_DATA);
+    return null;
+  }
+}
+
+function applyCustomDataUI() {
+  const section = $('customDataSection');
+  const active = $('customDataActive');
+  if (!section) return;
+  if (hasCustomData()) {
+    active.classList.remove('hidden');
+  } else {
+    active.classList.add('hidden');
+  }
+}
+
 // ===== Data Fetching =====
 async function fetchMods() {
   loadingState.classList.remove('hidden');
@@ -462,14 +489,22 @@ async function fetchMods() {
   modContainer.classList.add('hidden');
 
   try {
-    const resp = await fetch(DATA_URL);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const data = await resp.json();
+    let data;
+    const custom = loadCustomData();
+    if (custom) {
+      data = custom;
+    } else {
+      const resp = await fetch(DATA_URL);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      data = await resp.json();
+    }
 
     state.allItems = data.items || [];
     state.lastUpdated = data.lastUpdated || null;
 
-    if (state.lastUpdated) {
+    if (hasCustomData()) {
+      lastUpdatedEl.textContent = 'Using custom data';
+    } else if (state.lastUpdated) {
       const d = new Date(state.lastUpdated);
       lastUpdatedEl.textContent = 'Data updated ' + d.toLocaleString();
     }
@@ -1140,6 +1175,7 @@ function bindEvents() {
     } else {
       $('aboutLastUpdated').textContent = '—';
     }
+    applyCustomDataUI();
     aboutModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
   });
@@ -1152,6 +1188,57 @@ function bindEvents() {
       aboutModal.classList.add('hidden');
       document.body.style.overflow = '';
     }
+  });
+
+  // Hidden custom data section — revealed by clicking version in About
+  $('appVersionAbout').addEventListener('click', () => {
+    $('customDataSection').classList.toggle('hidden');
+  });
+
+  // Custom data file upload
+  $('customDataInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = JSON.parse(evt.target.result);
+        if (!data.items || !Array.isArray(data.items)) {
+          throw new Error('JSON must contain an "items" array');
+        }
+        localStorage.setItem(LS_CUSTOM_DATA, evt.target.result);
+        applyCustomDataUI();
+        // Re-initialize with custom data
+        _searchTagsCache.clear();
+        normalizedVersionMap = new Map();
+        categoryFilter.innerHTML = '<option value="">All Categories</option>';
+        versionFilter.innerHTML = '<option value="">All Versions</option>';
+        state.search = '';
+        state.category = '';
+        state.version = '';
+        searchInput.value = '';
+        fetchMods();
+      } catch (err) {
+        alert('Invalid JSON file: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  // Clear custom data
+  $('customDataClear').addEventListener('click', () => {
+    localStorage.removeItem(LS_CUSTOM_DATA);
+    applyCustomDataUI();
+    _searchTagsCache.clear();
+    normalizedVersionMap = new Map();
+    categoryFilter.innerHTML = '<option value="">All Categories</option>';
+    versionFilter.innerHTML = '<option value="">All Versions</option>';
+    state.search = '';
+    state.category = '';
+    state.version = '';
+    searchInput.value = '';
+    fetchMods();
   });
 
   // Lightbox close
