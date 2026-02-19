@@ -1065,6 +1065,181 @@ body {
   user-select: none;
 }
 
+/* ===== Debug Icon & Tooltip ===== */
+
+/* Shared hover-reveal wrapper for card/row/modal */
+.mod-card .debug-icon-btn,
+.mod-row .debug-icon-btn,
+#modalBody .debug-icon-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(14, 22, 43, 0.75);
+  color: var(--md-sys-color-on-surface-variant);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.mod-card .debug-icon-btn .material-icons,
+.mod-row .debug-icon-btn .material-icons,
+#modalBody .debug-icon-btn .material-icons {
+  font-size: 16px;
+}
+
+/* Show on card/row hover */
+.mod-card:hover .debug-icon-btn,
+.mod-row:hover .debug-icon-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Always show in modal (it's already open) */
+#modalBody .debug-icon-btn {
+  opacity: 1;
+  pointer-events: auto;
+  top: 12px;
+  right: 56px; /* offset from the existing modal close button */
+  width: 32px;
+  height: 32px;
+}
+
+.debug-icon-btn:hover {
+  background: rgba(73, 252, 255, 0.25) !important;
+  color: var(--md-sys-color-primary) !important;
+}
+
+/* List row needs position:relative for absolute debug btn */
+.mod-row {
+  position: relative;
+}
+
+/* The floating tooltip */
+.debug-tooltip {
+  position: fixed;
+  z-index: 9999;
+  width: 460px;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: var(--md-sys-color-surface-container-highest);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  font-size: 12px;
+  color: var(--md-sys-color-on-surface);
+  padding: 12px;
+  animation: fadeIn 0.12s ease;
+}
+
+.debug-tooltip.hidden {
+  display: none !important;
+}
+
+.debug-tooltip-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.debug-tooltip-close:hover {
+  background: rgba(255, 100, 100, 0.2);
+  color: var(--md-sys-color-error);
+}
+
+.debug-tooltip-close .material-icons {
+  font-size: 14px;
+}
+
+.debug-section {
+  margin-bottom: 12px;
+}
+
+.debug-section:last-child {
+  margin-bottom: 0;
+}
+
+.debug-section-title {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--md-sys-color-primary);
+  opacity: 0.8;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.debug-row {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 6px;
+  padding: 2px 0;
+  align-items: baseline;
+}
+
+.debug-key {
+  font-size: 11px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: 'Roboto Mono', monospace;
+  word-break: break-all;
+  opacity: 0.8;
+}
+
+.debug-val {
+  font-size: 11px;
+  color: var(--md-sys-color-on-surface);
+  word-break: break-word;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.debug-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.debug-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  background: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 10px;
+  font-size: 10px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: 'Roboto Mono', monospace;
+}
+
+.debug-penalty {
+  font-size: 9px;
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0.5;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 900px) {
   .toolbar {

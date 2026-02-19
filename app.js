@@ -330,42 +330,110 @@ function scoreTag(tag, query) {
   return -1;                                            // no match
 }
 
+// ===== Key:Value Field Search =====
+
+// Maps user-facing field keys to a function that returns the string value(s) for an item
+const FIELD_KEY_MAP = {
+  name:        (item) => [item.name || ''],
+  author:      (item) => item.authorsList || [],
+  authors:     (item) => item.authorsList || [],
+  category:    (item) => item.categories || [],
+  categories:  (item) => item.categories || [],
+  version:     (item) => [item.gameVersionReq || ''],
+  gameversion: (item) => [item.gameVersionReq || ''],
+  modversion:  (item) => [item.modVersion || ''],
+  source:      (item) => [
+    ...Object.keys(item.urls || {}),
+    ...(item.sources || []).map((s) => (typeof s === 'object' ? JSON.stringify(s) : String(s))),
+  ],
+  sources:     (item) => [
+    ...Object.keys(item.urls || {}),
+    ...(item.sources || []).map((s) => (typeof s === 'object' ? JSON.stringify(s) : String(s))),
+  ],
+  url:         (item) => Object.values(item.urls || {}),
+  summary:     (item) => [item.summary || ''],
+  description: (item) => [item.description || ''],
+};
+
+function matchFieldQuery(item, fieldKey, fieldValue) {
+  const resolver = FIELD_KEY_MAP[fieldKey.toLowerCase()];
+  if (!resolver) return null; // unknown field — fall through to normal search
+  const values = resolver(item);
+  const fv = fieldValue.toLowerCase();
+  for (const v of values) {
+    const vl = (v || '').toLowerCase();
+    if (vl.includes(fv)) return true;
+  }
+  return false;
+}
+
+// Score a single item against one raw term (key:value or tag-based).
+// Returns -1 if no match, otherwise a non-negative score.
+function scoreItemAgainstTerm(item, rawTerm) {
+  const colonIdx = rawTerm.indexOf(':');
+  if (colonIdx > 0) {
+    const fieldKey = rawTerm.substring(0, colonIdx).trim();
+    const fieldValue = rawTerm.substring(colonIdx + 1).trim();
+    if (fieldValue.length > 0 && FIELD_KEY_MAP[fieldKey.toLowerCase()]) {
+      return matchFieldQuery(item, fieldKey, fieldValue) ? 100 : -1;
+    }
+  }
+  // Normal tag-based search
+  const q = rawTerm.toLowerCase();
+  const tags = buildSearchTags(item);
+  let best = -1;
+  for (const tag of tags) {
+    const s = scoreTag(tag, q);
+    if (s > best) best = s;
+  }
+  return best;
+}
+
 function searchMods(items, query) {
   if (!query || query.trim().length === 0) return items;
 
-  const queryParts = query
+  // Comma separates OR groups; + within a group means AND (all must match).
+  const orGroups = query
     .split(',')
     .map((p) => p.trim())
     .filter((p) => p.length > 0);
 
-  if (queryParts.length === 0) return items;
+  if (orGroups.length === 0) return items;
 
   const scoreMap = new Map();
   const negativeResults = new Set();
   let hasPositive = false;
   let hasNegative = false;
 
-  for (const qp of queryParts) {
-    const isNegative = qp.startsWith('-') && qp.length > 1;
-    const actualQuery = isNegative ? qp.substring(1).toLowerCase() : qp.toLowerCase();
+  for (const group of orGroups) {
+    const isNegative = group.startsWith('-') && group.length > 1;
+    const rawGroup = isNegative ? group.substring(1) : group;
 
     if (isNegative) hasNegative = true;
     else hasPositive = true;
 
+    // Split on + to get AND sub-terms (strip surrounding whitespace)
+    const andTerms = rawGroup
+      .split('+')
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+
     for (const item of items) {
-      const tags = buildSearchTags(item);
-      let bestScore = -1;
-      for (const tag of tags) {
-        const s = scoreTag(tag, actualQuery);
-        if (s > bestScore) bestScore = s;
+      // All AND terms must match
+      let groupScore = 0;
+      let allMatch = true;
+      for (const term of andTerms) {
+        const s = scoreItemAgainstTerm(item, term);
+        if (s < 0) { allMatch = false; break; }
+        groupScore += s;
       }
-      if (bestScore >= 0) {
-        if (isNegative) {
-          negativeResults.add(item);
-        } else {
-          const prev = scoreMap.get(item) || 0;
-          scoreMap.set(item, Math.max(prev, bestScore));
-        }
+      if (!allMatch) continue;
+
+      if (isNegative) {
+        negativeResults.add(item);
+      } else {
+        const prev = scoreMap.get(item) || 0;
+        scoreMap.set(item, Math.max(prev, groupScore));
       }
     }
   }
@@ -691,6 +759,8 @@ function renderGrid() {
 
     const outdated = isOutdatedVersion(item.gameVersionReq);
 
+    const debugHtml = buildDebugIcon(item);
+
     card.innerHTML = `
       ${imgHtml}
       <div class="card-body">
@@ -705,6 +775,7 @@ function renderGrid() {
         <div class="card-links">${linksHtml}${fabHtml ? '<div class="card-fab-spacer"></div>' : ''}</div>
       </div>
       ${fabHtml}
+      ${debugHtml}
     `;
 
     modContainer.appendChild(card);
@@ -739,6 +810,7 @@ function renderList() {
     const linksHtml = buildLinkButtons(item.urls);
     const dlBtnHtml = buildRowDownloadBtn(item.urls);
     const rowOutdated = isOutdatedVersion(item.gameVersionReq);
+    const rowDebugHtml = buildDebugIcon(item);
 
     row.innerHTML = `
       ${imgHtml}
@@ -750,6 +822,7 @@ function renderList() {
       <div class="row-date">${esc(date)}</div>
       <div class="row-categories">${catsHtml}</div>
       <div class="row-links">${dlBtnHtml}${linksHtml}</div>
+      ${rowDebugHtml}
     `;
 
     modContainer.appendChild(row);
@@ -803,6 +876,8 @@ function openDetail(item) {
       `<span class="detail-meta-item"><span class="material-icons">edit_calendar</span>Updated: ${esc(dateEdited)}</span>`
     );
 
+  const modalDebugHtml = buildDebugIcon(item);
+
   modalBody.innerHTML = `
     ${galleryHtml}
     <div class="detail-header">
@@ -815,6 +890,7 @@ function openDetail(item) {
       <div class="detail-description">${description}</div>
     </div>
     ${linksHtml ? `<div class="detail-links">${linksHtml}</div>` : ''}
+    ${modalDebugHtml}
   `;
 
   detailModal.classList.remove('hidden');
@@ -1028,6 +1104,146 @@ function esc(str) {
 
 function escAttr(str) {
   return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ===== Debug Info =====
+function buildDebugInfo(item) {
+  // Build a human-readable display of raw mod data + search tags
+  const tags = buildSearchTags(item);
+
+  // Scalar / simple fields — matches the Dart model field order
+  const scalarFields = [
+    ['name',            item.name],
+    ['summary',         item.summary],
+    ['description',     item.description],
+    ['modVersion',      item.modVersion],
+    ['gameVersionReq',  item.gameVersionReq],
+    ['dateTimeCreated', item.dateTimeCreated],
+    ['dateTimeEdited',  item.dateTimeEdited],
+  ];
+
+  let html = '<div class="debug-section"><div class="debug-section-title">Mod Raw Info</div>';
+
+  for (const [key, val] of scalarFields) {
+    if (val === undefined || val === null || val === '') continue;
+    // Truncate very long strings (description can be huge)
+    const display = String(val).length > 300 ? String(val).slice(0, 300) + '…' : String(val);
+    html += `<div class="debug-row"><span class="debug-key">${esc(key)}</span><span class="debug-val">${esc(display)}</span></div>`;
+  }
+
+  // authorsList: List<String>
+  if (item.authorsList && item.authorsList.length > 0) {
+    html += `<div class="debug-row"><span class="debug-key">authorsList</span><span class="debug-val">${esc(item.authorsList.join(', '))}</span></div>`;
+  }
+
+  // categories: List<String>
+  if (item.categories && item.categories.length > 0) {
+    html += `<div class="debug-row"><span class="debug-key">categories</span><span class="debug-val">${esc(item.categories.join(', '))}</span></div>`;
+  }
+
+  // urls: Map<ModUrlType, String>
+  if (item.urls && Object.keys(item.urls).length > 0) {
+    for (const [urlType, urlVal] of Object.entries(item.urls)) {
+      html += `<div class="debug-row"><span class="debug-key">urls.${esc(urlType)}</span><span class="debug-val">${esc(urlVal)}</span></div>`;
+    }
+  }
+
+  // sources: List<ModSource>
+  if (item.sources && item.sources.length > 0) {
+    const sourcesStr = item.sources.map((s) => (typeof s === 'object' ? JSON.stringify(s) : String(s))).join(', ');
+    html += `<div class="debug-row"><span class="debug-key">sources</span><span class="debug-val">${esc(sourcesStr)}</span></div>`;
+  }
+
+  // images: Map<String, Image> — show count + keys
+  if (item.images && Object.keys(item.images).length > 0) {
+    const imgKeys = Object.keys(item.images);
+    html += `<div class="debug-row"><span class="debug-key">images (${imgKeys.length})</span><span class="debug-val">${esc(imgKeys.join(', '))}</span></div>`;
+  }
+
+  html += '</div>';
+
+  // Search tags
+  html += '<div class="debug-section"><div class="debug-section-title">Search Tags & Weights</div><div class="debug-tags">';
+  for (const tag of tags) {
+    html += `<span class="debug-tag">${esc(tag.term)}<span class="debug-penalty">-${tag.penalty}</span></span>`;
+  }
+  html += '</div></div>';
+
+  return html;
+}
+
+function buildDebugIcon(item) {
+  const infoHtml = buildDebugInfo(item);
+  // Encode as a data attribute to avoid HTML injection issues; we'll read it in JS
+  const encoded = encodeURIComponent(JSON.stringify({ html: infoHtml }));
+  return `<button class="debug-icon-btn" data-debug="${escAttr(encoded)}" onclick="event.stopPropagation(); showDebugTooltip(this)" title="Debug info"><span class="material-icons">bug_report</span></button>`;
+}
+
+// Global debug tooltip element (shared, singleton)
+let _debugTooltipEl = null;
+let _debugTooltipVisible = false;
+
+function getOrCreateDebugTooltip() {
+  if (!_debugTooltipEl) {
+    _debugTooltipEl = document.createElement('div');
+    _debugTooltipEl.className = 'debug-tooltip';
+    _debugTooltipEl.id = 'debugTooltip';
+    document.body.appendChild(_debugTooltipEl);
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+      if (_debugTooltipVisible && !e.target.closest('.debug-icon-btn') && !e.target.closest('.debug-tooltip')) {
+        hideDebugTooltip();
+      }
+    }, true);
+  }
+  return _debugTooltipEl;
+}
+
+function showDebugTooltip(btn) {
+  const tooltip = getOrCreateDebugTooltip();
+  const raw = btn.getAttribute('data-debug');
+  const { html } = JSON.parse(decodeURIComponent(raw));
+
+  tooltip.innerHTML = `<button class="debug-tooltip-close" onclick="hideDebugTooltip()"><span class="material-icons">close</span></button>${html}`;
+  // Make visible before measuring so offsetWidth/Height are accurate
+  tooltip.classList.remove('hidden');
+  _debugTooltipVisible = true;
+
+  // Position near the button (after making visible so dimensions are known)
+  positionDebugTooltip(btn, tooltip);
+}
+
+function positionDebugTooltip(btn, tooltip) {
+  // Reset position so measurement is not affected by prior placement
+  tooltip.style.left = '0px';
+  tooltip.style.top = '0px';
+
+  // Force reflow to get accurate dimensions
+  const ttWidth = tooltip.offsetWidth;
+  const ttHeight = tooltip.offsetHeight;
+
+  const btnRect = btn.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  let left = btnRect.left;
+  let top = btnRect.bottom + 8;
+
+  if (left + ttWidth > vw - 8) left = vw - ttWidth - 8;
+  if (left < 8) left = 8;
+  if (top + ttHeight > vh - 8) top = btnRect.top - ttHeight - 8;
+  if (top < 8) top = 8;
+
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+}
+
+function hideDebugTooltip() {
+  if (_debugTooltipEl) {
+    _debugTooltipEl.classList.add('hidden');
+    _debugTooltipVisible = false;
+  }
 }
 
 // Global helper for onerror image fallback
